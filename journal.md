@@ -23,3 +23,5 @@ One of these days you're going to manage to glimpse Commander Lambda's password 
 For a world-destroying despot with a penchant for making space-station-sized doomsday devices, Commander Lambda sure has good taste in office furniture. As a personal assistant, you have the latest in standing desk and ergonomic chair technology, and it sure makes a difference!
 
 Oh no! You escaped Commander Lambda's exploding space station -- but so did the Commander, and Lambda is definitely not happy with you. Lambda is chasing you in a heavily-armed starfighter, while you and the bunny workers are stuck in these lumbering escape pods. It'll take all your wits and cleverness to escape such a hare-y situation, so you'd better hop to it!
+
+It's not regulation, but you think if you can bypass the compressor, you can squeeze a few extra bursts of speed out of this escape pod.

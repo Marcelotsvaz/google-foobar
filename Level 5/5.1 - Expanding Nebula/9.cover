@@ -1,0 +1,311 @@
+>>>>>> from typing import Self
+>>>>>> from collections import Counter, defaultdict
+>>>>>> from itertools import chain
+>>>>>> from random import choice
+       
+       
+       
+>>>>>> GridAsLists = list[list[bool]]
+       
+       
+       
+>>>>>> class Grid:
+>>>>>>         def __init__( self, gridAsInt: int, width: int, height: int ) -> None:
+18129149:                 self.width = width
+18129149:                 self.height = height
+18129149:                 self.gridAsInt = gridAsInt
+               
+               
+>>>>>>         def __eq__( self, value: Self ) -> bool:
+>>>>>>                 return self.width == value.width and self.height == value.height and self.gridAsInt == value.gridAsInt
+               
+               
+>>>>>>         def __getitem__( self, key: tuple[int, int] ) -> bool:
+339187380:                 return bool( self.gridAsInt & 1 << self.width * key[1] + key[0] )
+               
+               
+>>>>>>         def __setitem__( self, key, value: tuple[int, int] ) -> None:
+339151830:                 if value:
+216732316:                         self.gridAsInt |= 1 << self.width * key[1] + key[0]
+                       # else:
+                       #       self.gridAsInt |= 1 << self.width * key[1] + key[0]
+               
+               
+>>>>>>         @classmethod
+>>>>>>         def fromLists( cls, gridAsLists: GridAsLists ) -> Self:
+    1:                 width = len( gridAsLists[0] )
+    1:                 height = len( gridAsLists )
+                       
+                       # Convert to integer representation.
+    1:                 grid = cls( 0, width, height )
+   10:                 for y in range( height ):
+  459:                         for x in range( width ):
+  450:                                 grid[x, y] = gridAsLists[y][x]
+                       
+    1:                 return grid
+               
+               
+>>>>>>         def asLists( self ) -> GridAsLists:
+                       '''
+                       
+                       '''
+                       
+>>>>>>                 return [
+>>>>>>                         [
+>>>>>>                                 self[x, y]
+>>>>>>                                 for x in range( self.width )
+                               ]
+>>>>>>                         for y in range( self.height )
+                       ]
+               
+               
+>>>>>>         def __str__( self ) -> str:
+>>>>>>                 green = '\033[42m'
+>>>>>>                 reset = '\033[0m'
+                       
+>>>>>>                 lines = [ '🮀🮀' * self.width ]
+>>>>>>                 columns = []
+>>>>>>                 for y in range( self.height ):
+>>>>>>                         for x in range( self.width ):
+>>>>>>                                 if self[x, y]:
+>>>>>>                                         columns.append( green + '🭼🭿' + reset )
+                                       else:
+>>>>>>                                         columns.append( '🭼🭿' )
+                               
+>>>>>>                         lines.append( ''.join( columns ) )
+>>>>>>                         columns.clear()
+                       
+>>>>>>                 return '\n'.join( lines )
+               
+               
+>>>>>>         def nextGrid( self ) -> Self:
+>>>>>>                 nextWidth = self.width - 1
+>>>>>>                 nextHeight = self.height - 1
+                       
+>>>>>>                 nextGrid = self.__class__( 0, nextWidth, nextHeight )
+>>>>>>                 for y in range( nextHeight ):
+>>>>>>                         for x in range( nextWidth ):
+>>>>>>                                 if sum( [
+>>>>>>                                         self[x, y],
+>>>>>>                                         self[x + 1, y],
+>>>>>>                                         self[x, y + 1],
+>>>>>>                                         self[x + 1, y + 1],
+>>>>>>                                 ] ) == 1:
+>>>>>>                                         nextGrid[y, x] = True
+                       
+>>>>>>                 return nextGrid
+               
+               
+               # This will take literaly 1500 years...
+>>>>>>         def solutions( self ) -> list[Self]:
+                       '''
+                       
+                       '''
+                       
+  450:                 solutionWidth = self.width + 1
+  450:                 solutionHeight = self.height + 1
+  450:                 solutions = []
+                       
+                       # Iterate all possible solutions.
+ 7650:                 for possibleSolutionInt in range( 2 ** ( solutionWidth * solutionHeight ) ):
+                               
+ 7200:                         possibleSolution = Grid( possibleSolutionInt, solutionWidth, solutionHeight )
+12600:                         for y in range( self.height ):
+12600:                                 for x in range( self.width ):
+21600:                                         cell = sum( [
+ 7200:                                                 possibleSolution[x, y],
+ 7200:                                                 possibleSolution[x + 1, y],
+ 7200:                                                 possibleSolution[x, y + 1],
+ 7200:                                                 possibleSolution[x + 1, y + 1],
+ 7200:                                         ] ) == 1
+                                               
+ 7200:                                         if cell != self[x, y]:
+ 1800:                                                 break
+                                       else:
+ 5400:                                         continue
+                                       
+ 1800:                                 break
+                               else:
+ 5400:                                 solutions.append( possibleSolution )
+                       
+  450:                 return solutions
+               
+               
+>>>>>>         def sliceVertical( self, x: int ) -> Self:
+12033698:                 gridSlice = self.__class__( 0, 1, self.height )
+                       
+132370628:                 for y in range( self.height ):
+120336930:                         gridSlice[0, y] = self[x, y]
+                       
+12033698:                 return gridSlice
+               
+               
+>>>>>>         def sliceHorizontal( self, y: int ) -> Self:
+10650:                 gridSlice = self.__class__( 0, self.width, 1 )
+                       
+31500:                 for x in range( self.width ):
+20850:                         gridSlice[x, 0] = self[x, y]
+                       
+10650:                 return gridSlice
+               
+               
+>>>>>>         def columnSolutions( self, x: int ) -> list[Self]:
+   50:                 column = self.sliceVertical( x )
+  550:                 cells = [ column.sliceHorizontal( y ) for y in range( self.height ) ]
+                       
+   50:                 solutionsByKey = defaultdict( list )
+  650:                 for cellSolution in cells[0].solutions():
+  600:                         bottom = cellSolution.sliceHorizontal( 1 ).gridAsInt
+  600:                         solutionsByKey[bottom].append( [ cellSolution ] )
+                       
+  450:                 for cell in cells[1:]:
+  400:                         nextSolutionsByKey = defaultdict( list )
+                               
+ 5200:                         for cellSolution in cell.solutions():
+ 4800:                                 top = cellSolution.sliceHorizontal( 0 ).gridAsInt
+ 4800:                                 bottom = cellSolution.sliceHorizontal( 1 ).gridAsInt
+                                       
+ 4800:                                 if top in solutionsByKey:
+8882300:                                         for columnSolution in solutionsByKey[top]:
+8877500:                                                 newColumnSolution = columnSolution[:]
+8877500:                                                 newColumnSolution.append( cellSolution )
+8877500:                                                 nextSolutionsByKey[bottom].append( newColumnSolution )
+                               
+  400:                         solutionsByKey = nextSolutionsByKey
+                       
+   50:                 newColumnSolutions = []
+6077650:                 for columnSolution in chain.from_iterable( solutionsByKey.values() ):
+6077600:                         newColumnSolution = self.__class__( 0, 2, self.height + 1 )
+                               
+60776000:                         for y, cellSolution in enumerate( columnSolution ):
+54698400:                                 newColumnSolution[0, y] = cellSolution[0, 0]
+54698400:                                 newColumnSolution[1, y] = cellSolution[1, 0]
+                                       
+54698400:                                 newColumnSolution[0, y + 1] = cellSolution[0, 1]
+54698400:                                 newColumnSolution[1, y + 1] = cellSolution[1, 1]
+                               
+6077600:                         newColumnSolutions.append( newColumnSolution )
+                       
+   50:                 return newColumnSolutions
+               
+               
+>>>>>>         def solve( self ) -> int:
+   52:                 columnSolutions = ( self.columnSolutions( x ) for x in range( self.width ) )
+                       
+121554:                 solutionCounter = Counter( solution.sliceVertical( 1 ).gridAsInt for solution in next( columnSolutions ) )
+   50:                 for solutions in columnSolutions:
+   49:                         newSolutionCounter = Counter()
+                               
+5956097:                         for solution in solutions:
+5956048:                                 left = solution.sliceVertical( 0 ).gridAsInt
+5956048:                                 right = solution.sliceVertical( 1 ).gridAsInt
+                                       
+5956048:                                 if left in solutionCounter:
+5956048:                                         newSolutionCounter[right] += solutionCounter[left]
+                               
+   49:                         solutionCounter = newSolutionCounter
+                       
+    1:                 return solutionCounter.total()
+       
+       
+       
+>>>>>> t0 = [
+>>>>>>         [
+>>>>>>                 [ False ],
+>>>>>>                 [ True ],
+>>>>>>                 [ False ],
+               ],
+>>>>>>         2,
+       ]
+       
+>>>>>> t1 = [
+>>>>>>         [
+>>>>>>                 [ True, False, True ],
+>>>>>>                 [ False, True, False ],
+>>>>>>                 [ True, False, True ],
+               ],
+>>>>>>         4,
+       ]
+       
+>>>>>> t2 = [
+>>>>>>         [
+>>>>>>                 [ True, True, False, True, False, True, False, True, True, False ],
+>>>>>>                 [ True, True, False, False, False, False, True, True, True, False ],
+>>>>>>                 [ True, True, False, False, False, False, False, False, False, True ],
+>>>>>>                 [ False, True, False, False, False, False, True, True, False, False ],
+               ],
+>>>>>>         11567,
+       ]
+       
+>>>>>> t3 = [
+>>>>>>         [
+>>>>>>                 [ True, False, True, False, False, True, True, True ],
+>>>>>>                 [ True, False, True, False, False, False, True, False ],
+>>>>>>                 [ True, True, True, False, False, False, True, False ],
+>>>>>>                 [ True, False, True, False, False, False, True, False ],
+>>>>>>                 [ True, False, True, False, False, True, True, True ],
+               ],
+>>>>>>         254,
+       ]
+       
+>>>>>> t4 = [
+>>>>>>         [
+>>>>>>                 [
+                               # choice( [ True, False] )
+>>>>>>                         True
+                               # False
+>>>>>>                         for _ in range( 50 )
+                       ]
+>>>>>>                 for _ in range( 9 )
+               ],
+               # -1,
+>>>>>>         100663356,
+               # 342015522530891220930318205106520120995761507496882358868830383880718255659276117597645436150624945088901216664965365050,
+       ]
+       
+       
+       
+>>>>>> for index, test in enumerate( [ t1, t2, t3, t4 ] ):
+>>>>>>         results = Grid.fromLists( test[0] ).solve()
+               
+>>>>>>         print( f'Test {index}: ', end = '' )
+>>>>>>         if results == test[1]:
+>>>>>>                 print( f'success!' )
+               else:
+>>>>>>                 print( f'faileds! Returned {results} instead of {test[1]}.' )
+       
+       
+       
+       # import timeit
+       # time = timeit.timeit( lambda: Grid.fromLists( t4[0] ).solve(), number = 100 ) / 100
+       # print( f' Result: {time:,.3f}s' )
+       
+       
+       
+       # import sys
+       # import trace
+       # tracer = trace.Trace(
+       #     ignoredirs = [ sys.prefix, sys.exec_prefix ],
+       #     trace = 0,
+       #     count = 1,
+       # )
+       # tracer.run( 'Grid.fromLists( t4[0] ).solve()' )
+       # r = tracer.results()
+       # r.write_results( show_missing = True, coverdir = '.' )
+       
+       
+       
+       # Column results:
+       # 50x9 (All True): 78s
+       # 50x9 (All False): 243s
+       # 50x9 (Random): 108s
+       
+       # Cell results:
+       # 50x9 (All True): 0.057s
+       # 50x9 (All False): 91s
+       # 50x9 (Random): 1.391s
+       
+       
+       
+       # TODO:
+       # Symmetry on 1-slice?
