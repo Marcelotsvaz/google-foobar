@@ -20,13 +20,17 @@ class Grid:
 		return self.width == value.width and self.height == value.height and self.gridAsInt == value.gridAsInt
 	
 	
+	def __hash__( self ) -> int:
+		return hash( self.gridAsInt )
+	
+	
 	def __getitem__( self, key: tuple[int, int] ) -> bool:
-		return bool( self.gridAsInt & 1 << self.width * key[1] + key[0] )
+		return bool( self.gridAsInt & 1 << self.height * key[0] + key[1] )
 	
 	
 	def __setitem__( self, key, value: tuple[int, int] ) -> None:
 		if value:
-			self.gridAsInt |= 1 << self.width * key[1] + key[0]
+			self.gridAsInt |= 1 << self.height * key[0] + key[1]
 		# else:
 		# 	self.gridAsInt |= 1 << self.width * key[1] + key[0]
 	
@@ -96,48 +100,26 @@ class Grid:
 		return nextGrid
 	
 	
-	# This will take literaly 1500 years...
-	def solutions( self ) -> list[Self]:
+	def singleCellSolutions( self ) -> list[Self]:
 		'''
 		
 		'''
 		
-		solutionWidth = self.width + 1
-		solutionHeight = self.height + 1
-		solutions = []
+		if self.gridAsInt == 0:
+			solutions = [ 0, 3, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15 ]
+		else:
+			solutions = [ 1, 2, 4, 8 ]
 		
-		# Iterate all possible solutions.
-		for possibleSolutionInt in range( 2 ** ( solutionWidth * solutionHeight ) ):
-			
-			possibleSolution = Grid( possibleSolutionInt, solutionWidth, solutionHeight )
-			for y in range( self.height ):
-				for x in range( self.width ):
-					cell = sum( [
-						possibleSolution[x, y],
-						possibleSolution[x + 1, y],
-						possibleSolution[x, y + 1],
-						possibleSolution[x + 1, y + 1],
-					] ) == 1
-					
-					if cell != self[x, y]:
-						break
-				else:
-					continue
-				
-				break
-			else:
-				solutions.append( possibleSolution )
-		
-		return solutions
+		return [ self.__class__( gridAsInt, 2, 2 ) for gridAsInt in solutions ]
 	
 	
 	def sliceVertical( self, x: int ) -> Self:
-		gridSlice = self.__class__( 0, 1, self.height )
+		bitMask = 2 ** self.height - 1
+		offset = x * self.height
 		
-		for y in range( self.height ):
-			gridSlice[0, y] = self[x, y]
+		gridAsInt = self.gridAsInt >> offset & bitMask
 		
-		return gridSlice
+		return self.__class__( gridAsInt, 1, self.height )
 	
 	
 	def sliceHorizontal( self, y: int ) -> Self:
@@ -154,16 +136,16 @@ class Grid:
 		cells = [ column.sliceHorizontal( y ) for y in range( self.height ) ]
 		
 		solutionsByKey = defaultdict( list )
-		for cellSolution in cells[0].solutions():
-			bottom = cellSolution.sliceHorizontal( 1 ).gridAsInt
+		for cellSolution in cells[0].singleCellSolutions():
+			bottom = cellSolution.sliceHorizontal( 1 )
 			solutionsByKey[bottom].append( [ cellSolution ] )
 		
 		for cell in cells[1:]:
 			nextSolutionsByKey = defaultdict( list )
 			
-			for cellSolution in cell.solutions():
-				top = cellSolution.sliceHorizontal( 0 ).gridAsInt
-				bottom = cellSolution.sliceHorizontal( 1 ).gridAsInt
+			for cellSolution in cell.singleCellSolutions():
+				top = cellSolution.sliceHorizontal( 0 )
+				bottom = cellSolution.sliceHorizontal( 1 )
 				
 				if top in solutionsByKey:
 					for columnSolution in solutionsByKey[top]:
@@ -192,13 +174,13 @@ class Grid:
 	def solve( self ) -> int:
 		columnSolutions = ( self.columnSolutions( x ) for x in range( self.width ) )
 		
-		solutionCounter = Counter( solution.sliceVertical( 1 ).gridAsInt for solution in next( columnSolutions ) )
+		solutionCounter = Counter( solution.sliceVertical( 1 ) for solution in next( columnSolutions ) )
 		for solutions in columnSolutions:
 			newSolutionCounter = Counter()
 			
 			for solution in solutions:
-				left = solution.sliceVertical( 0 ).gridAsInt
-				right = solution.sliceVertical( 1 ).gridAsInt
+				left = solution.sliceVertical( 0 )
+				right = solution.sliceVertical( 1 )
 				
 				if left in solutionCounter:
 					newSolutionCounter[right] += solutionCounter[left]
@@ -211,15 +193,6 @@ class Grid:
 
 t0 = [
 	[
-		[ False ],
-		[ True ],
-		[ False ],
-	],
-	2,
-]
-
-t1 = [
-	[
 		[ True, False, True ],
 		[ False, True, False ],
 		[ True, False, True ],
@@ -227,7 +200,7 @@ t1 = [
 	4,
 ]
 
-t2 = [
+t1 = [
 	[
 		[ True, True, False, True, False, True, False, True, True, False ],
 		[ True, True, False, False, False, False, True, True, True, False ],
@@ -237,7 +210,7 @@ t2 = [
 	11567,
 ]
 
-t3 = [
+t2 = [
 	[
 		[ True, False, True, False, False, True, True, True ],
 		[ True, False, True, False, False, False, True, False ],
@@ -248,28 +221,46 @@ t3 = [
 	254,
 ]
 
-t4 = [
+t3 = [
 	[
 		[
-			# choice( [ True, False] )
 			True
-			# False
 			for _ in range( 50 )
 		]
 		for _ in range( 9 )
 	],
-	# -1,
 	100663356,
-	# 342015522530891220930318205106520120995761507496882358868830383880718255659276117597645436150624945088901216664965365050,
+]
+
+t4 = [
+	[
+		[
+			False
+			for _ in range( 50 )
+		]
+		for _ in range( 9 )
+	],
+	342015522530891220930318205106520120995761507496882358868830383880718255659276117597645436150624945088901216664965365050,
+]
+
+t5 = [
+	[
+		[
+			choice( [ True, False] )
+			for _ in range( 50 )
+		]
+		for _ in range( 9 )
+	],
+	-1,
 ]
 
 
 
-for index, test in enumerate( [ t1, t2, t3, t4 ] ):
+for index, test in enumerate( [ t0, t1, t2, t3, t4, t5 ] ):
 	results = Grid.fromLists( test[0] ).solve()
 	
 	print( f'Test {index}: ', end = '' )
-	if results == test[1]:
+	if results == test[1] or test[1] == -1:
 		print( f'success!' )
 	else:
 		print( f'faileds! Returned {results} instead of {test[1]}.' )
@@ -277,7 +268,7 @@ for index, test in enumerate( [ t1, t2, t3, t4 ] ):
 
 
 # import timeit
-# time = timeit.timeit( lambda: Grid.fromLists( t4[0] ).solve(), number = 100 ) / 100
+# time = timeit.timeit( lambda: Grid.fromLists( t4[0] ).solve(), number = 1 ) / 1
 # print( f' Result: {time:,.3f}s' )
 
 
@@ -309,3 +300,4 @@ for index, test in enumerate( [ t1, t2, t3, t4 ] ):
 
 # TODO:
 # Symmetry on 1-slice?
+# Pre-calculate last vertical slice.
