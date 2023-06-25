@@ -1,4 +1,4 @@
-from typing import Self
+from typing import Self, Iterator
 from collections import Counter, defaultdict
 from itertools import chain
 from random import choice
@@ -131,16 +131,23 @@ class Grid:
 		return gridSlice
 	
 	
-	def columnSolutions( self, x: int ) -> list[Self]:
+	def columnSolutions( self, x: int ) -> Iterator[Self]:
 		column = self.sliceVertical( x )
-		cells = [ column.sliceHorizontal( y ) for y in range( self.height ) ]
+		cells = ( column.sliceHorizontal( y ) for y in range( self.height ) )
 		
 		solutionsByKey = defaultdict( list )
-		for cellSolution in cells[0].singleCellSolutions():
+		for cellSolution in next( cells ).singleCellSolutions():
 			bottom = cellSolution.sliceHorizontal( 1 )
-			solutionsByKey[bottom].append( [ cellSolution ] )
+			
+			longCellSolution = self.__class__( 0, 2, self.height + 1 )
+			longCellSolution[0, 0] = cellSolution[0, 0]
+			longCellSolution[0, 1] = cellSolution[0, 1]
+			longCellSolution[1, 0] = cellSolution[1, 0]
+			longCellSolution[1, 1] = cellSolution[1, 1]
+			
+			solutionsByKey[bottom].append( longCellSolution )
 		
-		for cell in cells[1:]:
+		for y, cell in enumerate( cells, start = 1 ):
 			nextSolutionsByKey = defaultdict( list )
 			
 			for cellSolution in cell.singleCellSolutions():
@@ -149,26 +156,16 @@ class Grid:
 				
 				if top in solutionsByKey:
 					for columnSolution in solutionsByKey[top]:
-						newColumnSolution = columnSolution[:]
-						newColumnSolution.append( cellSolution )
+						newColumnSolution = self.__class__( columnSolution.gridAsInt, 2, self.height + 1 )
+						
+						newColumnSolution[0, y + 1] = cellSolution[0, 1]
+						newColumnSolution[1, y + 1] = cellSolution[1, 1]
+						
 						nextSolutionsByKey[bottom].append( newColumnSolution )
 			
 			solutionsByKey = nextSolutionsByKey
 		
-		newColumnSolutions = []
-		for columnSolution in chain.from_iterable( solutionsByKey.values() ):
-			newColumnSolution = self.__class__( 0, 2, self.height + 1 )
-			
-			for y, cellSolution in enumerate( columnSolution ):
-				newColumnSolution[0, y] = cellSolution[0, 0]
-				newColumnSolution[1, y] = cellSolution[1, 0]
-				
-				newColumnSolution[0, y + 1] = cellSolution[0, 1]
-				newColumnSolution[1, y + 1] = cellSolution[1, 1]
-			
-			newColumnSolutions.append( newColumnSolution )
-		
-		return newColumnSolutions
+		return chain.from_iterable( solutionsByKey.values() )
 	
 	
 	def solve( self ) -> int:
@@ -246,7 +243,7 @@ t4 = [
 t5 = [
 	[
 		[
-			choice( [ True, False] )
+			choice( [ True, False ] )
 			for _ in range( 50 )
 		]
 		for _ in range( 9 )
@@ -276,9 +273,9 @@ for index, test in enumerate( [ t0, t1, t2, t3, t4, t5 ] ):
 # import sys
 # import trace
 # tracer = trace.Trace(
-#     ignoredirs = [ sys.prefix, sys.exec_prefix ],
-#     trace = 0,
-#     count = 1,
+#	ignoredirs = [ sys.prefix, sys.exec_prefix ],
+#	trace = 0,
+#	count = 1,
 # )
 # tracer.run( 'Grid.fromLists( t4[0] ).solve()' )
 # r = tracer.results()
@@ -286,18 +283,39 @@ for index, test in enumerate( [ t0, t1, t2, t3, t4, t5 ] ):
 
 
 
-# Column results:
+# By-Column results:
 # 50x9 (All True): 78s
 # 50x9 (All False): 243s
 # 50x9 (Random): 108s
 
-# Cell results:
+# By-Cell results (Loop slice):
 # 50x9 (All True): 0.057s
 # 50x9 (All False): 91s
 # 50x9 (Random): 1.391s
 
+# Loop slice:
+# First column: 1.579s
+# Column solutions: 58.317s
+# Merge solutions.: 39.796s
 
+# Bit slice:
+# First column: 1.282s
+# Column solutions: 60.045s
+# Merge solutions: 9.045s
 
-# TODO:
-# Symmetry on 1-slice?
-# Pre-calculate last vertical slice.
+# Column solutions:
+# First row.: 0.002s
+# Single cell solutions.: 0.002s
+# Append cell solutions.: 4.601s
+# Merge cell solutions.: 54.517s
+
+# Column solutions (last merge out of loop):
+# First row.: 0.002s
+# Single cell solutions.: 0.002s
+# Append cell solutions.: 4.579s
+# Merge cell solutions.: 31.876s
+
+# Column solutions (merge on append):
+# First row.: 0.003s
+# Single cell solutions.: 0.003s
+# Append cell solutions.: 8.396s
