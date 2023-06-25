@@ -2,6 +2,7 @@ from typing import Self, Iterator
 from collections import Counter, defaultdict
 from itertools import chain
 from random import choice
+from time import thread_time_ns
 
 
 
@@ -25,14 +26,14 @@ class Grid:
 	
 	
 	def __getitem__( self, key: tuple[int, int] ) -> bool:
-		return bool( self.gridAsInt & 1 << self.height * key[0] + key[1] )
+		return bool( self.gridAsInt >> self.height * key[0] + key[1] & 1 )
 	
 	
-	def __setitem__( self, key, value: tuple[int, int] ) -> None:
+	def __setitem__( self, key: tuple[int, int], value: bool ) -> None:
 		if value:
 			self.gridAsInt |= 1 << self.height * key[0] + key[1]
-		# else:
-		# 	self.gridAsInt |= 1 << self.width * key[1] + key[0]
+		else:
+			self.gridAsInt &= ~( 1 << self.height * key[0] + key[1] )
 	
 	
 	@classmethod
@@ -98,6 +99,21 @@ class Grid:
 					nextGrid[y, x] = True
 		
 		return nextGrid
+	
+	
+	def timeit( self, message: str = '' ) -> None:
+		if not hasattr( self, 'lastTime' ):
+			self.lastTime = thread_time_ns()
+			self.timespans = Counter()
+			# print( 'Start.' )
+			
+			return
+		
+		time = thread_time_ns()
+		timespan = ( time - self.lastTime ) / 1E9
+		self.timespans[ message ] += timespan
+		# print( f'{timespan:.3f}s: {message}' )
+		self.lastTime = time
 	
 	
 	def singleCellSolutions( self ) -> list[Self]:
