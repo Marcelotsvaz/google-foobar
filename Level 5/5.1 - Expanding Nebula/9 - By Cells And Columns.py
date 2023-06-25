@@ -184,7 +184,7 @@ class Grid:
 		return chain.from_iterable( solutionsByKey.values() )
 	
 	
-	def solve( self ) -> int:
+	def solution( self ) -> int:
 		columnSolutions = ( self.columnSolutions( x ) for x in range( self.width ) )
 		
 		solutionCounter = Counter( solution.sliceVertical( 1 ) for solution in next( columnSolutions ) )
@@ -270,7 +270,7 @@ t5 = [
 
 
 for index, test in enumerate( [ t0, t1, t2, t3, t4, t5 ] ):
-	results = Grid.fromLists( test[0] ).solve()
+	results = Grid.fromLists( test[0] ).solution()
 	
 	print( f'Test {index}: ', end = '' )
 	if results == test[1] or test[1] == -1:
@@ -281,7 +281,7 @@ for index, test in enumerate( [ t0, t1, t2, t3, t4, t5 ] ):
 
 
 # import timeit
-# time = timeit.timeit( lambda: Grid.fromLists( t4[0] ).solve(), number = 1 ) / 1
+# time = timeit.timeit( lambda: Grid.fromLists( t4[0] ).solution(), number = 1 ) / 1
 # print( f' Result: {time:,.3f}s' )
 
 
@@ -293,7 +293,7 @@ for index, test in enumerate( [ t0, t1, t2, t3, t4, t5 ] ):
 #	trace = 0,
 #	count = 1,
 # )
-# tracer.run( 'Grid.fromLists( t4[0] ).solve()' )
+# tracer.run( 'Grid.fromLists( t4[0] ).solution()' )
 # r = tracer.results()
 # r.write_results( show_missing = True, coverdir = '.' )
 
